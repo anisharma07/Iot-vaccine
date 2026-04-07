@@ -1,0 +1,7 @@
+[wokwi]
+version = 1
+firmware = "firmware/sketch.ino"
+elf = ""
+
+[[chip]]
+name = "esp32"

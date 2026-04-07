@@ -1,0 +1,40 @@
+\frametitle{Code Walkthrough --- Cloud Upload \& Status Codes}
+\begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{\textcolor{darkred}{ThingSpeak HTTP Upload}}
+      \begin{lstlisting}[language=C++]
+String url = server +
+  "?api_key=" + apiKey +
+  "&field1=" + String(temperature) +
+  "&field2=" + String(humidity)    +
+  "&field3=" + String(status_code) +
+  "&field4=" + String(accelMag)    +
+  "&field5=" + String(gasValue)    +
+  "&field6=" + String(damageScore);
+
+http.begin(url);
+int code = http.GET();
+// Runs every 15 seconds
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \textbf{\textcolor{darkred}{Status Code Reference}}
+      \vspace{0.2em}
+      {\small
+      \begin{tabular}{@{}cll@{}}
+        \toprule
+        \textbf{Code} & \textbf{Condition} & \textbf{Level} \\
+        \midrule
+        0 & Temp out of range  & \textcolor{darkred}{Critical} \\
+        1 & All normal         & \textcolor{codegreen}{OK} \\
+        2 & Tamper detected    & \textcolor{codeyellow}{Warning} \\
+        3 & Drop / Shock       & \textcolor{darkred}{Critical} \\
+        4 & Unsafe driving     & \textcolor{codeyellow}{Warning} \\
+        5 & Gas leakage        & \textcolor{darkred}{Critical} \\
+        6 & High humidity      & \textcolor{codeyellow}{Warning} \\
+        \textbf{9} & \textbf{Damage $\geq5$} & \textcolor{darkred}{\textbf{CRITICAL}} \\
+        \bottomrule
+      \end{tabular}
+      }
+    \end{column}
+  \end{columns}

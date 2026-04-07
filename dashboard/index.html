@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Real-time IoT dashboard for Smart Vaccine Delivery System — monitoring temperature, humidity, motion, gas, and transport safety." />
+  <title>🚑 Smart Vaccine Delivery — Live Dashboard</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══ -->
+  <header id="app-header">
+    <div class="header-left">
+      <div class="logo-icon">🚑</div>
+      <div>
+        <h1>Smart Vaccine Delivery</h1>
+        <p class="subtitle">Real-Time IoT Monitoring Dashboard</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="connection-badge" id="connectionBadge">
+        <span class="dot"></span>
+        <span class="label">Simulating</span>
+      </div>
+      <div class="clock" id="liveClock">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- ═══ STATUS BANNER ═══ -->
+  <section id="statusBanner" class="status-banner status-ok">
+    <div class="status-content">
+      <span class="status-icon" id="statusIcon">✅</span>
+      <div>
+        <div class="status-label" id="statusLabel">SYSTEM NORMAL</div>
+        <div class="status-detail" id="statusDetail">All parameters within safe limits</div>
+      </div>
+    </div>
+    <div class="damage-ring" id="damageRing">
+      <svg viewBox="0 0 120 120">
+        <circle class="ring-bg" cx="60" cy="60" r="50" />
+        <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="50" />
+      </svg>
+      <div class="damage-value">
+        <span id="damageValue">0</span>
+        <small>/10</small>
+      </div>
+      <div class="damage-label">Damage Score</div>
+    </div>
+  </section>
+
+  <!-- ═══ MAIN GRID ═══ -->
+  <main id="mainGrid">
+
+    <!-- ── Gauge Cards ── -->
+    <div class="card gauge-card" id="cardTemp">
+      <div class="card-header">
+        <span class="card-icon">🌡️</span>
+        <span class="card-title">Temperature</span>
+        <span class="card-badge" id="tempBadge">OK</span>
+      </div>
+      <div class="gauge-container">
+        <canvas id="gaugeTemp"></canvas>
+        <div class="gauge-value"><span id="valTemp">--</span><small>°C</small></div>
+      </div>
+      <div class="card-range">Safe: 2°C – 8°C</div>
+    </div>
+
+    <div class="card gauge-card" id="cardHum">
+      <div class="card-header">
+        <span class="card-icon">💧</span>
+        <span class="card-title">Humidity</span>
+        <span class="card-badge" id="humBadge">OK</span>
+      </div>
+      <div class="gauge-container">
+        <canvas id="gaugeHum"></canvas>
+        <div class="gauge-value"><span id="valHum">--</span><small>%</small></div>
+      </div>
+      <div class="card-range">Max: 80% RH</div>
+    </div>
+
+    <div class="card gauge-card" id="cardAccel">
+      <div class="card-header">
+        <span class="card-icon">📊</span>
+        <span class="card-title">Acceleration</span>
+        <span class="card-badge" id="accelBadge">OK</span>
+      </div>
+      <div class="gauge-container">
+        <canvas id="gaugeAccel"></canvas>
+        <div class="gauge-value"><span id="valAccel">--</span><small>g</small></div>
+      </div>
+      <div class="card-range">Shock &gt; 20,000</div>
+    </div>
+
+    <div class="card gauge-card" id="cardGas">
+      <div class="card-header">
+        <span class="card-icon">🌫️</span>
+        <span class="card-title">Gas Level</span>
+        <span class="card-badge" id="gasBadge">OK</span>
+      </div>
+      <div class="gauge-container">
+        <canvas id="gaugeGas"></canvas>
+        <div class="gauge-value"><span id="valGas">--</span><small>ppm</small></div>
+      </div>
+      <div class="card-range">Leak &gt; 400</div>
+    </div>
+
+    <!-- ── Time Series Chart ── -->
+    <div class="card chart-card" id="cardChart">
+      <div class="card-header">
+        <span class="card-icon">📈</span>
+        <span class="card-title">Sensor History</span>
+        <div class="chart-toggles">
+          <button class="toggle active" data-ds="temp" id="toggleTemp">Temp</button>
+          <button class="toggle active" data-ds="hum" id="toggleHum">Humidity</button>
+          <button class="toggle" data-ds="gas" id="toggleGas">Gas</button>
+          <button class="toggle" data-ds="accel" id="toggleAccel">Accel</button>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="timeChart"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Status Indicators ── -->
+    <div class="card status-card" id="cardStatus">
+      <div class="card-header">
+        <span class="card-icon">🚦</span>
+        <span class="card-title">System Status</span>
+      </div>
+      <div class="status-grid">
+        <div class="status-item" id="siTemp">
+          <div class="si-icon">🌡️</div>
+          <div class="si-label">Cold Chain</div>
+          <div class="si-indicator ok" id="siTempDot"></div>
+        </div>
+        <div class="status-item" id="siHum">
+          <div class="si-icon">💧</div>
+          <div class="si-label">Humidity</div>
+          <div class="si-indicator ok" id="siHumDot"></div>
+        </div>
+        <div class="status-item" id="siAccel">
+          <div class="si-icon">💥</div>
+          <div class="si-label">Shocks</div>
+          <div class="si-indicator ok" id="siAccelDot"></div>
+        </div>
+        <div class="status-item" id="siSpeed">
+          <div class="si-icon">🏎️</div>
+          <div class="si-label">Speed</div>
+          <div class="si-indicator ok" id="siSpeedDot"></div>
+        </div>
+        <div class="status-item" id="siGas">
+          <div class="si-icon">🌫️</div>
+          <div class="si-label">Gas/Odor</div>
+          <div class="si-indicator ok" id="siGasDot"></div>
+        </div>
+        <div class="status-item" id="siTamper">
+          <div class="si-icon">🔒</div>
+          <div class="si-label">Tamper</div>
+          <div class="si-indicator ok" id="siTamperDot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Alert Log ── -->
+    <div class="card alert-card" id="cardAlerts">
+      <div class="card-header">
+        <span class="card-icon">🔔</span>
+        <span class="card-title">Alert History</span>
+        <button class="clear-btn" id="clearAlerts">Clear</button>
+      </div>
+      <div class="alert-list" id="alertList">
+        <div class="alert-empty">No alerts yet — system monitoring active</div>
+      </div>
+    </div>
+
+    <!-- ── Event Simulator ── -->
+    <div class="card sim-card" id="cardSim">
+      <div class="card-header">
+        <span class="card-icon">🧪</span>
+        <span class="card-title">Event Simulator</span>
+      </div>
+      <p class="sim-desc">Simulate real-world events to test system response</p>
+      <div class="sim-buttons">
+        <button class="sim-btn sim-normal" id="simNormal" data-event="normal">
+          <span>✅</span> Normal
+        </button>
+        <button class="sim-btn sim-heat" id="simHeat" data-event="heat">
+          <span>🔥</span> Heat Exposure
+        </button>
+        <button class="sim-btn sim-cold" id="simCold" data-event="cold">
+          <span>❄️</span> Cold Failure
+        </button>
+        <button class="sim-btn sim-drop" id="simDrop" data-event="drop">
+          <span>💥</span> Drop / Shock
+        </button>
+        <button class="sim-btn sim-speed" id="simSpeed" data-event="speed">
+          <span>🏎️</span> Rash Driving
+        </button>
+        <button class="sim-btn sim-gas" id="simGas" data-event="gas">
+          <span>🌫️</span> Gas Leakage
+        </button>
+        <button class="sim-btn sim-humid" id="simHumid" data-event="humid">
+          <span>💧</span> High Humidity
+        </button>
+        <button class="sim-btn sim-critical" id="simCritical" data-event="critical">
+          <span>🚨</span> CRITICAL
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Status Code Reference ── -->
+    <div class="card ref-card" id="cardRef">
+      <div class="card-header">
+        <span class="card-icon">📋</span>
+        <span class="card-title">Status Code Reference</span>
+      </div>
+      <table class="ref-table">
+        <thead>
+          <tr><th>Code</th><th>Condition</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr class="ref-row" id="ref0"><td>0</td><td>Temp out of range</td><td>Cold chain failure</td></tr>
+          <tr class="ref-row" id="ref1"><td>1</td><td>All normal</td><td>OK ✅</td></tr>
+          <tr class="ref-row" id="ref2"><td>2</td><td>Tamper detected</td><td>Box opened</td></tr>
+          <tr class="ref-row" id="ref3"><td>3</td><td>High acceleration</td><td>Drop / impact</td></tr>
+          <tr class="ref-row" id="ref4"><td>4</td><td>High gyro speed</td><td>Unsafe transport</td></tr>
+          <tr class="ref-row" id="ref5"><td>5</td><td>Gas detected</td><td>Leakage / spoilage</td></tr>
+          <tr class="ref-row" id="ref6"><td>6</td><td>High humidity</td><td>Moisture risk</td></tr>
+          <tr class="ref-row ref-critical" id="ref9"><td>9</td><td>Damage ≥ 5</td><td>🚨 CRITICAL</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer>
+    <p>Smart Vaccine Delivery System v2.0 — IoT + Cloud Analytics + Safety Monitoring</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

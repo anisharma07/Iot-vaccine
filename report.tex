@@ -1,0 +1,632 @@
+\documentclass[12pt, a4paper]{article}
+
+% ─── Packages ───────────────────────────────────────────────────────────────
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{cite}
+\usepackage{fancyhdr}
+\setlength{\headheight}{15pt}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{float}
+
+% ─── Hyperref Setup ─────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue
+}
+
+% ─── Section Title Formatting ───────────────────────────────────────────────
+\titleformat{\section}{\large\bfseries\uppercase}{{\thesection.}}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{{\thesubsection}}{0.5em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{{\thesubsubsection}}{0.5em}{}
+
+% ─── Code Listing Style ──────────────────────────────────────────────────────
+\lstdefinestyle{cppstyle}{
+  language=C++,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{teal},
+  numberstyle=\tiny\color{gray},
+  numbers=left,
+  stepnumber=1,
+  numbersep=8pt,
+  frame=single,
+  breaklines=true,
+  captionpos=b,
+  tabsize=2,
+  backgroundcolor=\color{gray!5}
+}
+
+% ─── Header / Footer ────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small Smart Vaccine Delivery System}
+\lhead{\small CS-744: Internet of Things}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ─── Document ───────────────────────────────────────────────────────────────
+\begin{document}
+
+% ─── Title Block ────────────────────────────────────────────────────────────
+\begin{center}
+  {\LARGE \textbf{Smart Vaccine Delivery System: IoT-Based Real-Time\\Cold-Chain Monitoring and Safety Analytics}} \\[1em]
+  {\large Anirudh Sharma} \\[0.3em]
+  {\normalsize Roll No: 22DCS002 \quad BTech DD, 8th Semester (2025--26)} \\[0.2em]
+  {\normalsize Department of Computer Science and Engineering} \\[0.2em]
+  {\normalsize National Institute of Technology Hamirpur, Himachal Pradesh, India} \\[0.2em]
+  {\normalsize \texttt{22dcs002@nith.ac.in}} \\[0.5em]
+  {\small \textit{Course: CS-744 -- Internet of Things \quad Instructor: Dr.\ Robin Singh Bhadoria}} \\[0.5em]
+  \rule{\linewidth}{0.8pt}
+\end{center}
+
+% ─── Abstract ───────────────────────────────────────────────────────────────
+\section*{Abstract}
+\noindent
+Vaccine cold-chain failures account for up to 50\% of global vaccine wastage, primarily due to inadequate real-time monitoring during transport. This paper presents the design, simulation, and cloud integration of a Smart Vaccine Delivery System built on the ESP32 microcontroller. The system integrates a DHT22 temperature-humidity sensor, a simulated MPU6050 inertial measurement unit, an MQ-135 gas sensor, and a tamper detection switch to provide continuous multi-modal monitoring of vaccine containers in transit. A novel composite \textit{Damage Score Algorithm} aggregates readings from all sensors into a single risk metric (0--10), automatically triggering a CRITICAL alert (status code 9) when the score reaches or exceeds five. All sensor data are transmitted to the ThingSpeak cloud platform every 15 seconds via HTTP over Wi-Fi, enabling remote visualization and historical analysis across eight data fields. The firmware was developed and validated using the Wokwi ESP32 simulator, and a companion real-time web dashboard was built to visualize live telemetry with interactive event simulation. Results confirm reliable detection of all six monitored hazards: cold-chain temperature excursions, tamper events, mechanical shock, unsafe driving, gas leakage, and high humidity. The proposed system offers a cost-effective (approximately INR~1,200--1,400 per unit) and scalable solution for IoT-enabled vaccine cold-chain integrity management.
+
+\vspace{0.4em}
+\noindent\textbf{Keywords:} Internet of Things, Vaccine Cold-Chain, ESP32, DHT22, MPU6050, MQ-135, ThingSpeak, Damage Score Algorithm, Real-Time Monitoring
+
+\rule{\linewidth}{0.4pt}
+
+% ─── 1. Introduction ────────────────────────────────────────────────────────
+\section{Introduction}
+
+\subsection{Background and Motivation}
+Vaccines are among the most temperature-sensitive pharmaceutical products. The World Health Organization (WHO) mandates strict cold-chain maintenance at 2\,$^\circ$C--8\,$^\circ$C from the point of manufacture to the point of administration \cite{who_coldchain}. Despite these guidelines, the WHO estimates that up to 50\% of vaccines are wasted globally each year due to cold-chain failures \cite{who_wastage}. These failures are compounded by: (i)~manual and infrequent monitoring that fails to detect real-time anomalies; (ii)~no sensing of physical damage such as drops, shocks, or excessive vehicle motion; and (iii)~absence of contamination or spoilage detection during transit.
+
+\subsection{Problem Statement}
+Existing vaccine transport solutions lack a unified, real-time, multi-parameter monitoring framework that simultaneously covers thermal integrity, mechanical stress, chemical contamination, and physical security. The absence of such a system leads to delayed detection of failures, undetected damage, and consequent waste or administration of compromised vaccines.
+
+\subsection{Objectives}
+The objectives of this work are:
+\begin{enumerate}[label=(\roman*)]
+  \item Design a multi-sensor IoT node capable of monitoring temperature, humidity, mechanical shock, gyroscopic speed, gas levels, and tamper state.
+  \item Develop a composite Damage Score Algorithm that quantifies the cumulative risk to vaccine integrity.
+  \item Simulate and validate the system using the Wokwi ESP32 simulator with realistic event scenarios.
+  \item Integrate cloud logging via ThingSpeak for remote visibility and historical analysis.
+  \item Provide a real-time web dashboard for operational monitoring.
+\end{enumerate}
+
+\subsection{Scope and Organization}
+This paper is organized as follows: Section~\ref{sec:related} reviews related work; Section~\ref{sec:methodology} describes the proposed system architecture; Section~\ref{sec:implementation} details the implementation; Section~\ref{sec:results} presents simulation results; Section~\ref{sec:conclusion} concludes with future directions.
+
+% ─── 2. Literature Review ────────────────────────────────────────────────────
+\section{Literature Review}
+\label{sec:related}
+
+Several recent works have addressed IoT-based vaccine cold-chain monitoring, but each exhibits specific limitations that this work addresses.
+
+Jiang et al.\ \cite{jiang2024} proposed a sustainable IoT framework targeting energy optimization in edge monitoring nodes for cold-chain applications. Their system achieved a 22\% reduction in energy consumption and 99.8\% thermal compliance in real-time cold-chain tests. However, the approach incurs high initial setup costs and struggles in low-connectivity rural regions typical of last-mile vaccine delivery scenarios.
+
+Sujiya et al.\ \cite{sujiya2025} developed a multi-sensor node architecture for continuous transit monitoring with an alert latency under 2~seconds and 98\% fault detection accuracy. Their system monitors only temperature and humidity, omitting physical shock, gas leakage, and multi-fault escalation logic—gaps that this work directly addresses.
+
+Hasanat et al.\ \cite{hasanat2024} designed a smart active vaccine carrier integrating long-range communications for last-mile delivery, achieving 48-hour active uptime and 99\% communication success over a GPS and temperature-based testbed. The approach proposes complex carrier hardware and lacks predictive thermal failure modeling or composite risk scoring.
+
+Enriko et al.\ \cite{enriko2023} presented an integrated end-to-end tracking and cloud logging framework for COVID-19 vaccine distribution, demonstrating reliable visibility across a logistics chain. The system is heavily dependent on continuous network connectivity and provides limited edge-based analytics capability.
+
+Ali and Khan \cite{ali2023} evaluated IoT platforms for COVID-19 vaccine logistics using multi-criteria decision-making models. While the work provides useful platform assessment guidance, it does not contribute a real implementation or sensor fusion strategy.
+
+\smallskip
+\noindent\textbf{Gap Analysis:} No prior work combines (i) five sensor modalities, (ii) a composite damage scoring algorithm with severity escalation, (iii) status-code-based event classification, and (iv) a complete cloud-plus-dashboard pipeline within a single low-cost, simulation-validated prototype. This work bridges that gap.
+
+\begin{table}[H]
+\centering
+\caption{Comparison of Related Works}
+\label{tab:related}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{2.8cm} p{2.6cm} p{2.4cm} p{3.4cm}}
+\toprule
+\textbf{Reference} & \textbf{Sensors Used} & \textbf{Cloud / Alert} & \textbf{Key Limitation} \\
+\midrule
+Jiang et al., 2024 \cite{jiang2024}     & Temp, Energy       & Yes / Yes & High cost; rural connectivity \\
+Sujiya et al., 2025 \cite{sujiya2025}   & Temp, Humidity     & Yes / Yes & No shock/gas; no multi-fault \\
+Hasanat et al., 2024 \cite{hasanat2024} & GPS, Temp          & Yes / Yes & Complex HW; no predictive model \\
+Enriko et al., 2023 \cite{enriko2023}   & Location, Temp     & Yes / Yes & Network-dependent; no edge AI \\
+\textbf{This Work}                      & Temp, Hum, Accel, Gyro, Gas, Tamper & Yes / Yes & Simulation only (no field trial) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ─── 3. Methodology ─────────────────────────────────────────────────────────
+\section{Methodology / Proposed System}
+\label{sec:methodology}
+
+\subsection{System Architecture}
+
+The proposed system follows a three-tier IoT architecture: (1)~edge sensing on the ESP32 node, (2)~cloud storage and visualization on ThingSpeak, and (3)~a browser-based real-time dashboard. Figure~\ref{fig:architecture} illustrates the overall system topology.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{images/report/architecture.png}
+  \caption{System architecture: sensor layer, ESP32 processing layer, ThingSpeak cloud layer, and web dashboard.}
+  \label{fig:architecture}
+\end{figure}
+
+The ESP32 DevKit v4 serves as the central processing unit. Its integrated Wi-Fi module enables direct HTTP communication with ThingSpeak without requiring an additional gateway. All sensor readings are acquired, processed, and evaluated locally every 2~seconds; cloud uploads occur every 15~seconds to comply with ThingSpeak's free-tier rate limit.
+
+\subsection{Sensor Selection and GPIO Mapping}
+
+Table~\ref{tab:gpio} lists the hardware components and their ESP32 GPIO assignments.
+
+\begin{table}[H]
+\centering
+\caption{GPIO Pin Mapping and Component Roles}
+\label{tab:gpio}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lllll}
+\toprule
+\textbf{GPIO} & \textbf{Component} & \textbf{Model / Type} & \textbf{Mode} & \textbf{Parameter Measured} \\
+\midrule
+4  & DHT22         & AM2302        & Digital In  & Temperature (\,$^\circ$C), Humidity (\%RH) \\
+35 & MPU6050 sim.  & Potentiometer & Analog In   & Acceleration-X (raw) \\
+32 & MPU6050 sim.  & Potentiometer & Analog In   & Acceleration-Y / Gyro (raw) \\
+34 & MQ-135 sim.   & Potentiometer & Analog In   & Gas / Odor level (analog) \\
+15 & Tamper Switch & Push Button   & Digital In  & Container integrity (0/1) \\
+13 & Buzzer        & Passive       & Digital Out & Audible alarm \\
+2  & Red LED       & + 220\,$\Omega$ & Digital Out & Visual alert \\
+21,22 & LCD 16$\times$2 & I\textsuperscript{2}C & I\textsuperscript{2}C & Status display \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Resistor Selection:} A 220\,$\Omega$ current-limiting resistor was used in series with the red LED. At a 3.3~V GPIO output, this limits LED current to approximately 15~mA, safely below the ESP32's 20~mA per-pin maximum.
+
+\subsection{Damage Score Algorithm}
+
+The core novelty of this work is the \textit{Damage Score Algorithm}, which aggregates multi-sensor risk indicators into a single composite score in the range [0, 10]. Algorithm~\ref{alg:damage} defines the scoring logic.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.88\linewidth}
+\begin{lstlisting}[style=cppstyle, caption={Damage Score Algorithm (C++ / Arduino)}, label={alg:damage}]
+void evaluateStatus() {
+  damageScore = 0;
+  status_code = 1;         // default: OK
+
+  if (temp > 8.0 || temp < 2.0) { status_code = 0; damageScore += 3; }
+  if (tampered)                  { status_code = 2; damageScore += 2; }
+  if (accelMag > 20000)          { status_code = 3; damageScore += 2; }
+  if (gyroSpeed > 30000)         { status_code = 4; damageScore += 1; }
+  if (gasValue > 400)            { status_code = 5; damageScore += 3; }
+  if (humidity > 80.0)           { status_code = 6; damageScore += 1; }
+
+  // CRITICAL override
+  if (damageScore >= 5)          { status_code = 9; }
+}
+\end{lstlisting}
+\end{minipage}
+\end{figure}
+
+The weighted contributions reflect the relative severity of each failure mode: temperature excursions and gas leaks are most damaging (+3 each), followed by mechanical shock and tamper events (+2 each), and unsafe driving and humidity are lower-severity contributors (+1 each). Any combination reaching a score of five or more elevates the system to CRITICAL status (code 9), triggering continuous buzzer and LED alerts.
+
+\subsection{Status Code Classification}
+
+Table~\ref{tab:statuscodes} defines the eight status codes used by the system for both local display and cloud logging.
+
+\begin{table}[H]
+\centering
+\caption{Status Code Reference Table}
+\label{tab:statuscodes}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{clll}
+\toprule
+\textbf{Code} & \textbf{Condition} & \textbf{Trigger Criterion} & \textbf{Severity} \\
+\midrule
+0 & Cold chain failure   & $T < 2\,^\circ\text{C}$ or $T > 8\,^\circ\text{C}$ & Critical \\
+1 & System normal / OK  & All parameters within range   & Normal \\
+2 & Tamper detected      & Button pressed (GPIO 15 = LOW) & Warning \\
+3 & Shock / Drop         & $|\mathbf{a}| > 20000$         & Critical \\
+4 & Unsafe driving       & $\omega > 30000$               & Warning \\
+5 & Gas leakage          & Gas ADC $> 400$                & Critical \\
+6 & High humidity        & RH $> 80\%$                    & Warning \\
+9 & CRITICAL             & Damage Score $\geq 5$          & Critical \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cloud Integration: ThingSpeak}
+
+Data are uploaded via an HTTP GET request to the ThingSpeak REST API every 15~seconds. Eight fields are logged per entry, as listed in Table~\ref{tab:fields}.
+
+\begin{table}[H]
+\centering
+\caption{ThingSpeak Channel Field Mapping}
+\label{tab:fields}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{clll}
+\toprule
+\textbf{Field} & \textbf{Parameter} & \textbf{Unit} & \textbf{Range} \\
+\midrule
+1 & Temperature   & $^\circ$C    & $-40$ to $80$ \\
+2 & Humidity      & \%RH         & 0 to 100      \\
+3 & Status Code   & --           & \{0,1,2,3,4,5,6,9\} \\
+4 & Acceleration  & raw          & 0 to 56,755   \\
+5 & Gas Level     & ADC raw      & 0 to 4095     \\
+6 & Damage Score  & --           & 0 to 10       \\
+7 & Gyro Speed    & raw          & 0 to 65,535   \\
+8 & Tamper State  & boolean      & \{0, 1\}      \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ─── 4. Implementation ───────────────────────────────────────────────────────
+\section{Implementation}
+\label{sec:implementation}
+
+\subsection{Firmware Development (Arduino/ESP32)}
+
+The firmware was written in C++ using the Arduino framework for ESP32. Key libraries used are summarized in Table~\ref{tab:libs}.
+
+\begin{table}[H]
+\centering
+\caption{Software Libraries and Frameworks}
+\label{tab:libs}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lll}
+\toprule
+\textbf{Library} & \textbf{Version} & \textbf{Purpose} \\
+\midrule
+\texttt{WiFi.h}              & ESP32 core & Wi-Fi station mode \\
+\texttt{HTTPClient.h}        & ESP32 core & HTTP GET to ThingSpeak \\
+\texttt{DHT.h} (Adafruit)    & 1.4.x      & DHT22 sensor driver \\
+\texttt{LiquidCrystal\_I2C}  & 1.1.x      & LCD 16$\times$2 display \\
+\texttt{Wire.h}              & ESP32 core & I\textsuperscript{2}C bus \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The main loop polls sensors every 2~seconds, evaluates the Damage Score, triggers local actuators (buzzer and LED), prints a structured serial dashboard, and emits JSON-formatted telemetry for dashboard integration. Cloud uploads are throttled to every 15~seconds.
+
+\subsection{Sensor Simulation in Wokwi}
+
+Since the MPU6050 IMU and MQ-135 gas sensor are not natively supported as Wokwi components, they are simulated using potentiometers whose analog output (0--4095 ADC counts) is linearly mapped to the expected physical range:
+
+\begin{itemize}
+  \item \textbf{Acceleration (GPIO 35, 32):} Potentiometer output is mapped from [0, 4095] to [-32768, 32767], mirroring a real MPU6050 16-bit accelerometer. The vector magnitude $|\mathbf{a}| = \sqrt{a_x^2 + a_y^2 + a_z^2}$ is computed with $a_z$ fixed at 16384 (1\,g baseline).
+  \item \textbf{Gas (GPIO 34):} Raw ADC value is used directly, with threshold 400 indicating leakage.
+\end{itemize}
+
+The Wokwi simulation circuit includes the ESP32 DevKit C v4, DHT22, three potentiometers, a 16$\times$2 I\textsuperscript{2}C LCD, a push button, a passive buzzer, and a red LED with a 220\,$\Omega$ resistor, as shown in Figure~\ref{fig:wokwi}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{images/report/wowki-simulation.png}
+  \caption{Wokwi simulation circuit: ESP32 with DHT22, potentiometers (acceleration and gas), push button (tamper), LCD, buzzer, and LED.}
+  \label{fig:wokwi}
+\end{figure}
+
+\subsection{Web Dashboard}
+
+A browser-based real-time dashboard was implemented using HTML5, CSS3, and vanilla JavaScript with the Chart.js library. The dashboard features:
+\begin{itemize}
+  \item Four SVG-rendered semicircular gauges for temperature, humidity, acceleration, and gas.
+  \item A live time-series chart with toggle controls for all four parameters.
+  \item A status banner with contextual icons and descriptions corresponding to each status code.
+  \item A damage ring visualization (SVG arc) that updates color from green to amber to red as the damage score increases.
+  \item A timestamped alert log panel with severity classification.
+  \item An interactive Event Simulator with eight preset scenarios (Normal, Heat Exposure, Cold Failure, Drop/Shock, Rash Driving, Gas Leakage, High Humidity, and CRITICAL).
+\end{itemize}
+
+Figure~\ref{fig:dashboard} shows the dashboard in the CRITICAL alert state.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.88\linewidth]{images/dashboard.png}
+  \caption{Real-time web dashboard showing live sensor gauges, time-series chart, damage score ring, and alert log.}
+  \label{fig:dashboard}
+\end{figure}
+
+\subsection{ThingSpeak Cloud Setup}
+
+A ThingSpeak channel was configured with eight fields corresponding to Table~\ref{tab:fields}. The ESP32 firmware uses the Write API Key to perform HTTP GET uploads. The channel provides per-field visualization graphs, enabling stakeholders to remotely monitor vaccine container health from any browser. Figure~\ref{fig:thingspeak} shows the ThingSpeak channel interface.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{images/thingspeak_channel.png}
+  \caption{ThingSpeak channel showing six representative logged fields from the ESP32 simulation: Temperature, Humidity, Acceleration, Gas Level, Damage Score, and Status Code.}
+  \label{fig:thingspeak}
+\end{figure}
+
+% ─── 5. Results ──────────────────────────────────────────────────────────────
+\section{Results and Discussion}
+\label{sec:results}
+
+\subsection{Simulation Scenarios and Outcomes}
+
+Seven distinct event scenarios were simulated to validate the system's detection and alerting capabilities. For each scenario, the Wokwi simulation was configured to trigger the corresponding condition, and the serial monitor output, LCD display, and ThingSpeak uploads were verified.
+
+\subsubsection*{Scenario 1: Cold Chain Failure (Status 0)}
+The DHT22 virtual sensor was set to $T = -2.0\,^\circ$C. The system correctly detected the temperature breach, assigned a damage score of 3, set status code 0, activated the LED and buzzer, and logged the data to ThingSpeak Field~1 and Field~3.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim1_coldchain.png}
+    \caption{Wokwi circuit — cold chain event}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim1_output.png}
+    \caption{Serial monitor output}
+  \end{subfigure}
+  \caption{Scenario 1: Cold chain failure detection (Status Code 0).}
+  \label{fig:sim1}
+\end{figure}
+
+\subsubsection*{Scenario 2: Tamper Detection (Status 2)}
+Pressing the push button simulated unauthorized opening of the vaccine container. The system immediately raised a tamper alert (status 2), incremented the damage score by 2, and logged tamper state to ThingSpeak Field~8.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim2_tamper_detect.png}
+    \caption{Wokwi circuit — tamper event}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim2_output.png}
+    \caption{Serial monitor output}
+  \end{subfigure}
+  \caption{Scenario 2: Tamper detection (Status Code 2).}
+  \label{fig:sim2}
+\end{figure}
+
+\subsubsection*{Scenario 3: Shock / Drop (Status 3)}
+Potentiometers 1 and 2 were turned to maximum, simulating a high-magnitude acceleration ($|\mathbf{a}| > 20000$). The damage score increased by 2 and status code 3 was triggered.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim3_shock_drop.png}
+    \caption{Wokwi circuit — shock event}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim3_output.png}
+    \caption{Serial monitor output}
+  \end{subfigure}
+  \caption{Scenario 3: Shock/drop detection (Status Code 3).}
+  \label{fig:sim3}
+\end{figure}
+
+\subsubsection*{Scenario 4: Unsafe Driving (Status 4)}
+Potentiometer 2 was set to produce a gyro speed exceeding 30000 while acceleration remained below the shock threshold. Status code 4 was correctly assigned with a damage increment of 1.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim4_unsafe_drive.png}
+    \caption{Wokwi circuit — unsafe driving}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim4_output.png}
+    \caption{Serial monitor output}
+  \end{subfigure}
+  \caption{Scenario 4: Unsafe driving detection (Status Code 4).}
+  \label{fig:sim4}
+\end{figure}
+
+\subsubsection*{Scenario 5: Gas Leakage (Status 5)}
+Potentiometer 3 was turned past the threshold (ADC $> 400$), simulating gas or odor leakage. The system assigned a damage score of 3 and set status code 5, triggering CRITICAL alerts.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim5_gas_leakage.png}
+    \caption{Wokwi circuit — gas leakage}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim5_output.png}
+    \caption{Serial monitor output}
+  \end{subfigure}
+  \caption{Scenario 5: Gas leakage detection (Status Code 5).}
+  \label{fig:sim5}
+\end{figure}
+
+\subsubsection*{Scenario 6: High Humidity (Status 6)}
+The DHT22 was set to report 90\%~RH, exceeding the 80\% threshold. Status code 6 was raised with a damage contribution of 1.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim6_high_hum.png}
+    \caption{Wokwi circuit — high humidity}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim6_output.png}
+    \caption{Serial monitor output}
+  \end{subfigure}
+  \caption{Scenario 6: High humidity detection (Status Code 6).}
+  \label{fig:sim6}
+\end{figure}
+
+\subsubsection*{Scenario 7: CRITICAL Multi-Fault (Status 9)}
+A combined event was simulated with temperature excursion ($T = 12\,^\circ$C), high gas levels (ADC $= 650$), and high humidity (RH $= 85\%$). The cumulative damage score reached $3 + 3 + 1 = 7$, triggering status code 9. The LCD, buzzer, and LED all activated simultaneously.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim7_high_damage_score.png}
+    \caption{Wokwi circuit — CRITICAL event}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/report/sim7_output.png}
+    \caption{Serial monitor output}
+  \end{subfigure}
+  \caption{Scenario 7: CRITICAL multi-fault alert (Damage Score 7, Status Code 9).}
+  \label{fig:sim7}
+\end{figure}
+
+\subsection{ThingSpeak Cloud Results}
+
+All eight ThingSpeak fields were successfully populated during simulation runs. Figures~\ref{fig:ts_temp}--\ref{fig:ts_tamper} show representative field plots.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\linewidth}
+    \includegraphics[width=\linewidth]{images/report/field1_temp.png}
+    \caption{Field 1: Temperature ($^\circ$C)}
+    \label{fig:ts_temp}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \includegraphics[width=\linewidth]{images/report/field2_humidity.png}
+    \caption{Field 2: Humidity (\%RH)}
+    \label{fig:ts_hum}
+  \end{subfigure}
+
+  \vspace{0.5em}
+
+  \begin{subfigure}{0.48\linewidth}
+    \includegraphics[width=\linewidth]{images/report/field3_status_code.png}
+    \caption{Field 3: Status Code}
+    \label{fig:ts_status}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \includegraphics[width=\linewidth]{images/report/field6_damage_score.png}
+    \caption{Field 6: Damage Score}
+    \label{fig:ts_damage}
+  \end{subfigure}
+
+  \vspace{0.5em}
+
+  \begin{subfigure}{0.48\linewidth}
+    \includegraphics[width=\linewidth]{images/report/field5_gas_level.png}
+    \caption{Field 5: Gas Level (ADC)}
+    \label{fig:ts_gas}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \includegraphics[width=\linewidth]{images/report/field8_tamper_state.png}
+    \caption{Field 8: Tamper State (0/1)}
+    \label{fig:ts_tamper}
+  \end{subfigure}
+  \caption{ThingSpeak cloud field plots captured during simulation runs.}
+  \label{fig:ts_all}
+\end{figure}
+
+\subsection{Cost Analysis}
+
+Table~\ref{tab:cost} presents the estimated component-level bill of materials (BOM) for a single deployable unit.
+
+\begin{table}[H]
+\centering
+\caption{Component-Level Bill of Materials (Estimated)}
+\label{tab:cost}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Component} & \textbf{Unit Price (INR)} & \textbf{Qty $\times$ Price (INR)} \\
+\midrule
+ESP32 DevKit v4          & 500  & 500 \\
+DHT22 Sensor             & 300  & 300 \\
+LCD 16$\times$2 (I\textsuperscript{2}C) & 150 & 150 \\
+MQ-135 Gas Sensor        & 120  & 120 \\
+MPU6050 IMU Module       & 100  & 100 \\
+Passive Buzzer           & 30   & 30  \\
+Push Button (Tamper)     & 15   & 15  \\
+Red LED + 220\,$\Omega$  & 15   & 15  \\
+Jumper Wires + Breadboard & 220 & 220 \\
+\midrule
+\textbf{Total}           &      & \textbf{$\approx$ 1,450} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The estimated cost of INR~1,200--1,500 per unit (approximately USD~14--18) makes this solution highly cost-effective compared to commercial cold-chain loggers, which typically cost USD~100--500 per unit.
+
+\subsection{Discussion}
+
+The system successfully detected all six monitored hazard categories in every simulated scenario. The Damage Score Algorithm proved particularly effective for CRITICAL-level multi-fault escalation: combining gas leakage (+3) with a temperature excursion (+3) immediately triggers CRITICAL status (score $\geq 5$) without requiring either individual fault to reach a higher single-sensor threshold. This approach is more robust than per-sensor alarming, as it accounts for the compounding effect of simultaneous failures on vaccine integrity.
+
+A key strength of the design is its graceful offline capability: the system continues local monitoring, alert actuation, and LCD display even when Wi-Fi is unavailable, logging a warning to the serial monitor and resuming uploads when connectivity is restored.
+
+The primary limitation is that the MPU6050 and MQ-135 are simulated using potentiometers. While the firmware includes commented-out code for real I\textsuperscript{2}C MPU6050 communication and the ADC pin assignments for a real MQ-135, field validation with physical sensors remains future work.
+
+% ─── 6. Conclusion ──────────────────────────────────────────────────────────
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper presented the design, implementation, and simulation-based validation of a Smart Vaccine Delivery System using an ESP32 microcontroller. The system integrates five sensor modalities—temperature, humidity, acceleration, gyroscopic speed, gas level, and tamper detection—within a single IoT node. The novel Damage Score Algorithm aggregates these modalities into a composite risk metric, enabling both fine-grained per-fault status classification and CRITICAL-level multi-fault escalation. Cloud logging via ThingSpeak provides remote visibility and historical analytics, while a real-time web dashboard enables immediate operational response.
+
+All seven simulated scenarios were successfully validated, demonstrating 100\% detection accuracy in simulation. The system is estimated to cost approximately INR~1,200--1,500 per unit, making it practical for deployment across vaccine cold chains in developing regions.
+
+\smallskip
+\noindent\textbf{Future Work:} Planned extensions include: (i) deployment and field validation with real MPU6050 and MQ-135 sensors; (ii) integration with a blockchain ledger for tamper-proof chain-of-custody logging; (iii) GPS-based route safety analytics correlating shock events with geographic locations; (iv) mobile push notifications via a Telegram bot or ThingsBoard rule engine; and (v) machine learning-based predictive thermal failure modeling at the edge.
+
+% ─── References ─────────────────────────────────────────────────────────────
+\begin{thebibliography}{99}
+
+\bibitem{who_coldchain}
+World Health Organization, \textit{WHO Guidelines on Vaccine Cold Chain}, WHO/IVB/06.10, Geneva, Switzerland, 2006.
+
+\bibitem{who_wastage}
+World Health Organization, \textit{Vaccine wastage assessment: Field assessment and observations}, WHO/IVB/05.23, Geneva, Switzerland, 2005.
+
+\bibitem{ali2023}
+Y. Ali and H. U. Khan, ``IoT platforms assessment methodology for COVID-19 vaccine logistics and transportation: a multi-methods decision making model,'' \textit{Scientific Reports}, vol. 13, Art. no. 17575, Oct. 2023.
+
+\bibitem{jiang2024}
+S. Jiang, S. Jia, and H. Guo, ``Internet of Things (IoT)-enabled framework for a sustainable vaccine cold chain management system,'' \textit{Heliyon}, vol. 10, no. 7, e28910, Apr. 2024.
+
+\bibitem{sujiya2025}
+S. Sujiya, Praveen P., Prithika D., and Priyadharshini E., ``IoT-enabled cold chain monitoring for vaccine transportation,'' in \textit{Proc. 2025 Int. Conf. on Emerging Technologies}, IEEE, 2025.
+
+\bibitem{hasanat2024}
+R. T. Hasanat, N. Mansoor, N. Mohammed, M. S. Rahman, S. Momen, and M. Rasheduzzaman, ``Design and development of an IoT based smart vaccine carrier and real-time monitoring system,'' in \textit{Proc. IEEE Int. Conf. on Biomedical Engineering and Systems}, IEEE, 2024.
+
+\bibitem{enriko2023}
+I. K. A. Enriko, S. Pramono, D. Adrianto, and F. Alemuda, ``COVID-19 vaccine distribution tracking and monitoring using IoT,'' in \textit{Proc. IEEE Int. Conf. on Information Technology and Systems (ICITS)}, IEEE, 2023.
+
+\bibitem{espressif}
+Espressif Systems, \textit{ESP32 Technical Reference Manual}, Version 5.1, Shanghai, China. [Online]. Available: \url{https://docs.espressif.com}
+
+\bibitem{wokwi}
+Wokwi, \textit{Wokwi ESP32 Simulator Reference --- ESP32 DevKit C v4, DHT22 Component Guide}. [Online]. Available: \url{https://wokwi.com}
+
+\bibitem{thingspeak}
+MathWorks, \textit{ThingSpeak Platform --- REST API Reference}. [Online]. Available: \url{https://thingspeak.com}
+
+\bibitem{dht22}
+Aosong Electronics, \textit{AM2302/DHT22 Datasheet}, Guangzhou, China, 2022.
+
+\end{thebibliography}
+
+\end{document}

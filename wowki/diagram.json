@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "author": "Smart Vaccine Delivery System",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": -38.4, "left": 62.44, "attrs": {} },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": -172.5,
+      "left": -111,
+      "attrs": { "temperature": "6.2", "humidity": "0" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_accelX",
+      "top": -202.9,
+      "left": 326.2,
+      "attrs": { "value": "50" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_accelY",
+      "top": -202.9,
+      "left": 422.2,
+      "attrs": { "value": "50" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_gas",
+      "top": -202.9,
+      "left": 518.2,
+      "attrs": { "value": "10" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_tamper",
+      "top": 205.1,
+      "left": -69.7,
+      "rotate": 90,
+      "attrs": { "color": "red", "label": "TAMPER" }
+    },
+    { "type": "wokwi-buzzer", "id": "buzzer1", "top": -429.6, "left": 69, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 174.4,
+      "left": 119.4,
+      "rotate": 180,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 195.95,
+      "left": 153.6,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd1",
+      "top": -406.4,
+      "left": 255.2,
+      "attrs": { "pins": "i2c" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "lcd1:GND", "esp:GND.2", "black", [ "h-19.2", "v326.4" ] ],
+    [ "lcd1:VCC", "esp:3V3", "red", [ "h-48", "v278.5", "h-144.15" ] ],
+    [ "lcd1:SDA", "esp:21", "green", [ "h-86.4", "v432.2" ] ],
+    [ "lcd1:SCL", "esp:22", "cyan", [ "h-67.2", "v393.9" ] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "h307.2", "v48" ] ],
+    [ "dht1:SDA", "esp:4", "green", [ "v0" ] ],
+    [ "pot_accelX:VCC", "esp:3V3", "red", [ "v48", "h-308.15" ] ],
+    [ "pot_accelX:GND", "esp:GND.1", "black", [ "v393.6", "h-316.8", "v-144" ] ],
+    [ "pot_accelX:SIG", "esp:35", "orange", [ "v0" ] ],
+    [ "pot_accelY:VCC", "esp:3V3", "red", [ "v48", "h-404.15" ] ],
+    [ "pot_accelY:GND", "esp:GND.1", "black", [ "v393.6", "h-412.8", "v-144" ] ],
+    [ "pot_accelY:SIG", "esp:32", "yellow", [ "v0" ] ],
+    [ "pot_gas:VCC", "esp:3V3", "red", [ "v48", "h-500.15" ] ],
+    [ "pot_gas:GND", "esp:GND.1", "black", [ "v393.6", "h-508.8", "v-144" ] ],
+    [ "pot_gas:SIG", "esp:34", "purple", [ "v0" ] ],
+    [ "btn_tamper:1.l", "esp:15", "blue", [ "v0" ] ],
+    [ "btn_tamper:2.l", "esp:GND.2", "black", [ "v-259.2", "h201.4" ] ],
+    [ "buzzer1:1", "esp:13", "brown", [ "h-105.6", "v470.4" ] ],
+    [ "buzzer1:2", "esp:GND.2", "black", [ "v19.2", "h134", "v316.8" ] ],
+    [ "led1:A", "r2:1", "red", [ "v8.4", "h68.6" ] ],
+    [ "r2:2", "esp:2", "red", [ "v0" ] ],
+    [ "led1:C", "esp:GND.2", "black", [ "h165", "v-192", "h-146.2" ] ]
+  ],
+  "serialMonitor": { "display": "auto", "newline": "lf" },
+  "dependencies": {}
+}

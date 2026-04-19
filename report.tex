@@ -357,14 +357,8 @@ Since the MPU6050 IMU and MQ-135 gas sensor are not natively supported as Wokwi 
   \item \textbf{Gas (GPIO 34):} Raw ADC value is used directly, with threshold 400 indicating leakage.
 \end{itemize}
 
-The Wokwi simulation circuit includes the ESP32 DevKit C v4, DHT22, three potentiometers, a 16$\times$2 I\textsuperscript{2}C LCD, a push button, a passive buzzer, and a red LED with a 220\,$\Omega$ resistor, as shown in Figure~\ref{fig:wokwi}.
+The Wokwi simulation circuit includes the ESP32 DevKit C v4, DHT22, three potentiometers, a 16$\times$2 I\textsuperscript{2}C LCD, a push button, a passive buzzer, and a red LED with a 220\,$\Omega$ resistor.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.82\linewidth]{images/report/wowki-simulation.png}
-  \caption{Wokwi simulation circuit: ESP32 with DHT22, potentiometers (acceleration and gas), push button (tamper), LCD, buzzer, and LED.}
-  \label{fig:wokwi}
-\end{figure}
 
 \subsection{Damage Score Algorithm}
 
@@ -456,14 +450,6 @@ A browser-based real-time dashboard was implemented using HTML5, CSS3, and vanil
   \item An interactive Event Simulator with eight preset scenarios (Normal, Heat Exposure, Cold Failure, Drop/Shock, Rash Driving, Gas Leakage, High Humidity, and CRITICAL).
 \end{itemize}
 
-Figure~\ref{fig:dashboard} shows the dashboard in the CRITICAL alert state.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.88\linewidth]{images/dashboard.png}
-  \caption{Real-time web dashboard showing live sensor gauges, time-series chart, damage score ring, and alert log.}
-  \label{fig:dashboard}
-\end{figure}
 
 % ─── 6. Results and Discussion ────────────────────────────────────────────────
 \section{Results and Discussion}
@@ -473,149 +459,19 @@ Figure~\ref{fig:dashboard} shows the dashboard in the CRITICAL alert state.
 
 Seven distinct event scenarios were simulated to validate the system's detection and alerting capabilities. For each scenario, the Wokwi simulation was configured to trigger the corresponding condition, and the serial monitor output, LCD display, and ThingSpeak uploads were verified.
 
-\subsubsection*{Scenario 1: Cold Chain Failure (Status 0)}
-The DHT22 virtual sensor was set to $T = -2.0\,^\circ$C. The system correctly detected the temperature breach, assigned a damage score of 3, set status code 0, activated the LED and buzzer, and logged the data to ThingSpeak Field~1 and Field~3.
-
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim1_coldchain.png}
-    \caption{Wokwi circuit --- cold chain event}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim1_output.png}
-    \caption{Serial monitor output}
-  \end{subfigure}
-  \caption{Scenario 1: Cold chain failure detection (Status Code 0).}
-  \label{fig:sim1}
-\end{figure}
-
-\subsubsection*{Scenario 2: Tamper Detection (Status 2)}
-Pressing the push button simulated unauthorized opening of the vaccine container. The system immediately raised a tamper alert (status 2), incremented the damage score by 2, and logged tamper state to ThingSpeak Field~8.
-
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim2_tamper_detect.png}
-    \caption{Wokwi circuit --- tamper event}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim2_output.png}
-    \caption{Serial monitor output}
-  \end{subfigure}
-  \caption{Scenario 2: Tamper detection (Status Code 2).}
-  \label{fig:sim2}
-\end{figure}
-
-\subsubsection*{Scenario 3: Shock / Drop (Status 3)}
-Potentiometers 1 and 2 were turned to maximum, simulating a high-magnitude acceleration ($|\mathbf{a}| > 20000$). The damage score increased by 2 and status code 3 was triggered.
-
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim3_shock_drop.png}
-    \caption{Wokwi circuit --- shock event}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim3_output.png}
-    \caption{Serial monitor output}
-  \end{subfigure}
-  \caption{Scenario 3: Shock/drop detection (Status Code 3).}
-  \label{fig:sim3}
-\end{figure}
-
-\subsubsection*{Scenario 4: Unsafe Driving (Status 4)}
-Potentiometer 2 was set to produce a gyro speed exceeding 30000 while acceleration remained below the shock threshold. Status code 4 was correctly assigned with a damage increment of 1.
-
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim4_unsafe_drive.png}
-    \caption{Wokwi circuit --- unsafe driving}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim4_output.png}
-    \caption{Serial monitor output}
-  \end{subfigure}
-  \caption{Scenario 4: Unsafe driving detection (Status Code 4).}
-  \label{fig:sim4}
-\end{figure}
-
-\subsubsection*{Scenario 5: Gas Leakage (Status 5)}
-Potentiometer 3 was turned past the threshold (ADC $> 400$), simulating gas or odor leakage. The system assigned a damage score of 3 and set status code 5, triggering CRITICAL alerts.
-
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim5_gas_leakage.png}
-    \caption{Wokwi circuit --- gas leakage}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim5_output.png}
-    \caption{Serial monitor output}
-  \end{subfigure}
-  \caption{Scenario 5: Gas leakage detection (Status Code 5).}
-  \label{fig:sim5}
-\end{figure}
-
-\subsubsection*{Scenario 6: High Humidity (Status 6)}
-The DHT22 was set to report 90\%~RH, exceeding the 80\% threshold. Status code 6 was raised with a damage contribution of 1.
-
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim6_high_hum.png}
-    \caption{Wokwi circuit --- high humidity}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim6_output.png}
-    \caption{Serial monitor output}
-  \end{subfigure}
-  \caption{Scenario 6: High humidity detection (Status Code 6).}
-  \label{fig:sim6}
-\end{figure}
-
-\subsubsection*{Scenario 7: CRITICAL Multi-Fault (Status 9)}
-A combined event was simulated with temperature excursion ($T = 12\,^\circ$C), high gas levels (ADC $= 650$), and high humidity (RH $= 85\%$). The cumulative damage score reached $3 + 3 + 1 = 7$, triggering status code 9. The LCD, buzzer, and LED all activated simultaneously.
-
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim7_high_damage_score.png}
-    \caption{Wokwi circuit --- CRITICAL event}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/report/sim7_output.png}
-    \caption{Serial monitor output}
-  \end{subfigure}
-  \caption{Scenario 7: CRITICAL multi-fault alert (Damage Score 7, Status Code 9).}
-  \label{fig:sim7}
-\end{figure}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Scenario 1: Cold Chain Failure (Status 0):} The DHT22 virtual sensor was set to $T = -2.0\,^\circ$C. The system correctly detected the temperature breach, assigned a damage score of 3, set status code 0, activated the LED and buzzer, and logged the data to ThingSpeak.
+  \item \textbf{Scenario 2: Tamper Detection (Status 2):} Pressing the push button simulated unauthorized opening of the vaccine container. The system immediately raised a tamper alert, incremented the damage score by 2, and logged tamper state to ThingSpeak.
+  \item \textbf{Scenario 3: Shock / Drop (Status 3):} Potentiometers were adjusted to simulate high-magnitude acceleration ($|\mathbf{a}| > 20000$). The damage score increased by 2 and status code 3 was triggered.
+  \item \textbf{Scenario 4: Unsafe Driving (Status 4):} Gyro speed exceeded 30000 while acceleration remained normal. Status code 4 was assigned with a damage increment of 1.
+  \item \textbf{Scenario 5: Gas Leakage (Status 5):} Gas potentiometer was turned past the threshold. The system assigned a damage score of 3 and set status code 5.
+  \item \textbf{Scenario 6: High Humidity (Status 6):} The DHT22 was set to report 90\%~RH, exceeding the 80\% threshold. Status code 6 was raised with a damage score of 1.
+  \item \textbf{Scenario 7: CRITICAL Multi-Fault (Status 9):} A combined event was simulated with temperature excursion ($T = 12\,^\circ$C), high gas levels (ADC $= 650$), and high humidity (RH $= 85\%$). The cumulative damage score reached $3 + 3 + 1 = 7$, triggering status code 9. The LCD, buzzer, and LED all activated simultaneously.
+\end{itemize}
 
 \subsection{ThingSpeak Cloud Results}
 
-All eight ThingSpeak fields were successfully populated during simulation runs. Figures~\ref{fig:ts_temp}--\ref{fig:ts_tamper} show representative field plots.
+All eight ThingSpeak fields were successfully populated during simulation runs, confirming the end-to-end data pipeline from the edge to the cloud platform across all parameters (Temperature, Humidity, Status Code, Acceleration, Gas Level, Damage Score, Gyro Speed, and Tamper State). Figures~\ref{fig:ts_temp} and \ref{fig:ts_hum} show representative field plots for temperature and humidity.
 
 \begin{figure}[H]
   \centering
@@ -630,36 +486,8 @@ All eight ThingSpeak fields were successfully populated during simulation runs. 
     \caption{Field 2: Humidity (\%RH)}
     \label{fig:ts_hum}
   \end{subfigure}
-
-  \vspace{0.5em}
-
-  \begin{subfigure}{0.48\linewidth}
-    \includegraphics[width=\linewidth]{images/report/field3_status_code.png}
-    \caption{Field 3: Status Code}
-    \label{fig:ts_status}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \includegraphics[width=\linewidth]{images/report/field6_damage_score.png}
-    \caption{Field 6: Damage Score}
-    \label{fig:ts_damage}
-  \end{subfigure}
-
-  \vspace{0.5em}
-
-  \begin{subfigure}{0.48\linewidth}
-    \includegraphics[width=\linewidth]{images/report/field5_gas_level.png}
-    \caption{Field 5: Gas Level (ADC)}
-    \label{fig:ts_gas}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \includegraphics[width=\linewidth]{images/report/field8_tamper_state.png}
-    \caption{Field 8: Tamper State (0/1)}
-    \label{fig:ts_tamper}
-  \end{subfigure}
-  \caption{ThingSpeak cloud field plots captured during simulation runs.}
-  \label{fig:ts_all}
+  \caption{Representative ThingSpeak cloud field plots for temperature and humidity captured during simulation runs.}
+  \label{fig:ts_plots}
 \end{figure}
 
 \subsection{System Cost Analysis}

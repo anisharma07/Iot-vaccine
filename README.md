@@ -147,10 +147,11 @@ The project incorporates a fully configured Wokwi simulation.
 │   ├── script.js            # Dashboard logic, charting, and alert system
 │   └── style.css            # Custom dashboard styling
 ├── images/report/           # Presentation materials and system diagrams
-├── sketch.ino           # Main C++ source code for the ESP32
-├── diagram.json         # Wokwi circuit wiring map
-├── libraries.txt        # Required Arduino libraries for Wokwi
-└── wokwi-project.txt    
+├── wowki/                   # Simulation files and ESP32 firmware
+│   ├── sketch.ino           # Main C++ source code for the ESP32
+│   ├── diagram.json         # Wokwi circuit wiring map
+│   ├── libraries.txt        # Required Arduino libraries for Wokwi
+│   └── wokwi-project.txt    
 └── README.md                # This file
 ```
 
